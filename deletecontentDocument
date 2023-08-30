@@ -1,0 +1,5 @@
+ContentDocumentLink docId = [SELECT Id, LinkedEntityId, ContentDocumentId FROM ContentDocumentLink where LinkedEntityId = :idf];
+                delete docId;
+                Id conDocId = docId.ContentDocumentId;
+                
+                ContentVersion conId = [SELECT id from ContentVersion where ContentDocumentId = :conDocId];
