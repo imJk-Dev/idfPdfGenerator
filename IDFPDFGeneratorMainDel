@@ -1,0 +1,69 @@
+global with sharing class IDFPDFGeneratorMain {
+
+    @InvocableMethod
+    public static void generateIDFPDF(List < id > idf) {
+        IDFPDFGeneratorMain.generateIDFPDFfuture(idf); 
+    }
+    
+    @Future(callout=true)
+    public static void generateIDFPDFfuture(List < id > idf) {
+        try{
+        
+        SymphonyIPM__IDF_Questions__c settings = SymphonyIPM__IDF_Questions__c.getInstance('Invention Disclosure Questions');
+        System.debug(settings);
+            List<SymphonyIPM__Invention_Disclosure_New__c> idfs=[Select Id,LastModifiedDate,SymphonyIPM__Title__c,Name from SymphonyIPM__Invention_Disclosure_New__c where Id in: idf];
+            for (SymphonyIPM__Invention_Disclosure_New__c invention: idfs) {
+                PageReference pdfPage = page.PDF;
+                pdfPage.getParameters().put('Id', invention.Id);
+                
+                //ContentDocumentLink docId = [SELECT Id, LinkedEntityId, ContentDocumentId FROM ContentDocumentLink where LinkedEntityId = :idf];
+                
+                //Id conDocId = docId.ContentDocumentId;
+                
+                //ContentVersion conId = [SELECT id from ContentVersion where ContentDocumentId = :conDocId];
+                //delete docId;
+                //delete conId;
+                //String title = idfs.title;
+                //ContentDocument conDoc = [Select id from ContentDocument where title like '%title%'];
+                
+                String title = invention.Name;
+                String title1 = '%'+title+'%';
+                List<ContentDocument> conDocId = [Select Id from ContentDocument where Title like :title1];
+                delete conDocId;
+                system.debug(conDocId);
+                
+                DateTime dt = invention.LastModifiedDate;
+                Date datevalue = dt.date();
+                ContentVersion conVer = new ContentVersion();
+                conVer.ContentLocation = 'S'; // S specify this document is in SF, use E for external files
+                conVer.PathOnClient = invention.SymphonyIPM__Title__c + '.pdf'; // The files name, extension is very important here which will help the file in preview.
+                conVer.Title = invention.Name + ' - '+System.now().format('MM/dd/yyyy HH:mm:ss')+'.pdf'; // Display name of the files
+                conVer.VersionData = pdfPage.getContent(); // converting your binary string to Blog
+                insert conVer;
+
+                // First get the content document Id from ContentVersion
+                Id conDoc = [SELECT ContentDocumentId FROM ContentVersion WHERE Id =: conVer.Id].ContentDocumentId;
+
+                //Create ContentDocumentLink
+                ContentDocumentLink cDe = new ContentDocumentLink();
+                cDe.ContentDocumentId = conDoc;
+                cDe.LinkedEntityId = invention.Id; // you can use objectId,GroupId etc
+                cDe.ShareType = 'I'; // Inferred permission, checkout description of ContentDocumentLink object for more details
+                // cDe.Visibility = 'ALL';
+                insert cDe;
+                System.debug(cDe.Id);
+            }
+        //}
+        }catch(Exception e){
+            System.debug(e.getMessage() + '--' + e.getStackTraceString());
+        }
+    }
+    public static void testVal(String name)
+    {
+        String name1 = name;
+      name1 = name1 +'test';
+         name1 = name1 +'test2';
+         name1 = name1 +'test4';
+         name1 = name1 +'test6';
+    }
+}
